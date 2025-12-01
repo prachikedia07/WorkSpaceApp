@@ -1,3 +1,4 @@
+// src/app/dashboard/page.jsx (or wherever your DashboardPage lives)
 "use client";
 
 import { useSession, signIn } from "next-auth/react";
@@ -22,6 +23,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+import ReportsWidget from "@/components/ReportsWidget"; // ← new widget import
+
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const [userSummary, setUserSummary] = useState(null);
@@ -39,7 +42,7 @@ export default function DashboardPage() {
         .then((data) => {
           if (!data.error) setUserSummary(data);
         })
-         .catch((err) => console.error("Error loading user summary:", err));
+        .catch((err) => console.error("Error loading user summary:", err));
     }
   }, [status]);
 
@@ -179,6 +182,9 @@ export default function DashboardPage() {
           </div>
         ))}
       </div>
+      <div className="mt-6">
+    <ReportsWidget months={6} />
+  </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -290,6 +296,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-
-

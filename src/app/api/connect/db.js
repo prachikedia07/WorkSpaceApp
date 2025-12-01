@@ -8,8 +8,14 @@ export async function connectDB() {
     return;
   }
 
+  // ✅ FIX: Ensure MONGODB_URI exists
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    throw new Error("MONGODB_URI is missing. Add it in .env.local");
+  }
+
   try {
-    await mongoose.connect(process.env.MONGODB_URI, {
+    await mongoose.connect(uri, {
       dbName: "teamfinance",
     });
     isConnected = true;
