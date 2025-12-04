@@ -34,8 +34,20 @@ export const authOptions = {
     }),
   ],
   callbacks: {
-    // same signIn/session callbacks you added earlier
+  async session({ session, user }) {
+    // ensure session.user.id is set (Credentials provider returns id already)
+    session.user = session.user || {};
+    // prefer user.id (from adapter / authorize), fallback to existing, fallback to null
+    session.user.id = user?.id || user?._id?.toString?.() || session.user.id || null;
+    return session;
   },
+  async jwt({ token, user }) {
+    // when using credentials provider, user may be returned at sign in, copy id to token
+    if (user?.id) token.id = user.id;
+    return token;
+  }
+},
+
   pages: { signIn: "/login" },
   secret: process.env.NEXTAUTH_SECRET,
 };

@@ -24,6 +24,7 @@ import {
 } from "recharts";
 
 import ReportsWidget from "@/components/ReportsWidget"; // ← new widget import
+import TasksWidget from "@/components/TasksWidget";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -56,14 +57,7 @@ export default function DashboardPage() {
 
   if (!session) return null;
 
-  const chartData = [
-    { month: "Jan", revenue: 4500, expenses: 3200 },
-    { month: "Feb", revenue: 5200, expenses: 3800 },
-    { month: "Mar", revenue: 4800, expenses: 3500 },
-    { month: "Apr", revenue: 6100, expenses: 4200 },
-    { month: "May", revenue: 7200, expenses: 4800 },
-    { month: "Jun", revenue: 6800, expenses: 4500 },
-  ];
+const chartData = userSummary?.chartData || [];
 
   const recentActivities = [
     {
@@ -182,9 +176,15 @@ export default function DashboardPage() {
           </div>
         ))}
       </div>
+
+<div className="mt-6">
+  <TasksWidget />
+</div>
+
       <div className="mt-6">
     <ReportsWidget months={6} />
   </div>
+
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

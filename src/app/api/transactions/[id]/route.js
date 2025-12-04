@@ -9,7 +9,7 @@ import mongoose from "mongoose";
 
 function normalizeId(id) {
   try {
-    return mongoose.Types.ObjectId(String(id));
+    return new mongoose.Types.ObjectId(String(id));
   } catch (e) {
     return id;
   }
