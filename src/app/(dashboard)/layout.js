@@ -1,6 +1,7 @@
+import "../globals.css";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
-import "../globals.css";
+
 
 export default function DashboardLayout({ children }) {
   return (

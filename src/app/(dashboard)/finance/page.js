@@ -1,10 +1,8 @@
-
 // src/app/finance/page.jsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
 import {
   Card,
   CardContent,
@@ -14,16 +12,19 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-import { Plus, X, Edit2, Trash2, RefreshCcw } from "lucide-react";
-
-//////////////////////////////////////////////////////////////////
-// Minimal, function-forward Finance page
-// - prominent Add form
-// - transactions table with edit/delete
-// - slide-over edit form
-// - toasts
-//////////////////////////////////////////////////////////////////
+import { Plus, X, Edit2, Trash2, RefreshCcw, TrendingUp, TrendingDown } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
 
 function Toast({ open, type = "success", message, onClose }) {
   if (!open) return null;
@@ -70,11 +71,16 @@ function SlideOver({ open, onClose, title, children }) {
 export default function FinancePage() {
   const router = useRouter();
 
-  // data
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // add form
+  // Financial summary
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [totalExpenses, setTotalExpenses] = useState(0);
+  const [monthlyData, setMonthlyData] = useState([]);
+  const [categoryBreakdown, setCategoryBreakdown] = useState([]);
+
+  // Add form
   const [amount, setAmount] = useState("");
   const [type, setType] = useState("income");
   const [category, setCategory] = useState("General");
@@ -83,33 +89,193 @@ export default function FinancePage() {
   const [project, setProject] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // edit slide-over
+  // Edit slide-over
   const [editing, setEditing] = useState(null);
   const [editSubmitting, setEditSubmitting] = useState(false);
 
-  // toast
+  // Toast
   const [toast, setToast] = useState({ open: false, type: "success", message: "" });
 
-  // load transactions
+  // Load all transactions and calculate stats
   useEffect(() => {
-    let mounted = true;
-    async function load() {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/transactions?limit=50");
-        const json = await res.json();
-        if (!mounted) return;
-        setTransactions(json.transactions || []);
-      } catch (err) {
-        console.error("Failed to load transactions:", err);
-        setToast({ open: true, type: "error", message: "Failed to load transactions" });
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    }
-    load();
-    return () => (mounted = false);
+    loadFinanceData();
   }, []);
+
+  // async function loadFinanceData() {
+  //   setLoading(true);
+  //   try {
+  //     const res = await fetch("/api/transactions?limit=1000");
+  //     const json = await res.json();
+  //     const txns = json.transactions || [];
+  //     setTransactions(txns);
+
+  //     // Calculate totals
+  //     let revenue = 0;
+  //     let expenses = 0;
+
+  //     txns.forEach((t) => {
+  //       const amt = Math.abs(Number(t.amount) || 0);
+  //       if (t.type === "income") revenue += amt;
+  //       else expenses += amt;
+  //     });
+
+  //     setTotalRevenue(revenue);
+  //     setTotalExpenses(expenses);
+
+  //     // Generate monthly data for last 6 months
+  //     const monthlyMap = {};
+  //     const now = new Date();
+
+  //     for (let i = 5; i >= 0; i--) {
+  //       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+  //       const key = d.toISOString().slice(0, 7);
+  //       monthlyMap[key] = { revenue: 0, expenses: 0, net: 0 };
+  //     }
+
+  //     txns.forEach((t) => {
+  //       if (!t.date) return;
+  //       const key = new Date(t.date).toISOString().slice(0, 7);
+  //       if (monthlyMap[key]) {
+  //         const amt = Math.abs(Number(t.amount) || 0);
+  //         if (t.type === "income") {
+  //           monthlyMap[key].revenue += amt;
+  //           monthlyMap[key].net += amt;
+  //         } else {
+  //           monthlyMap[key].expenses += amt;
+  //           monthlyMap[key].net -= amt;
+  //         }
+  //       }
+  //     });
+
+  //     const chartData = Object.entries(monthlyMap).map(([month, data]) => ({
+  //       month: new Date(month + "-01").toLocaleDateString("en-US", { month: "short" }),
+  //       Income: data.revenue,
+  //       Expenses: data.expenses,
+  //       Net: data.net,
+  //     }));
+
+  //     setMonthlyData(chartData);
+
+  //     // Category breakdown for expenses
+  //     const categoryMap = {};
+  //     txns.filter(t => t.type === "expense").forEach((t) => {
+  //       const cat = t.category || "General";
+  //       const amt = Math.abs(Number(t.amount) || 0);
+  //       categoryMap[cat] = (categoryMap[cat] || 0) + amt;
+  //     });
+
+  //     const topCategories = Object.entries(categoryMap)
+  //       .sort(([, a], [, b]) => b - a)
+  //       .slice(0, 5)
+  //       .map(([category, amount]) => ({ category, amount }));
+
+  //     setCategoryBreakdown(topCategories);
+
+  //   } catch (err) {
+  //     console.error("Failed to load finance data:", err);
+  //     setToast({ open: true, type: "error", message: "Failed to load finance data" });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }
+  async function loadFinanceData() {
+  setLoading(true);
+  try {
+    const res = await fetch("/api/transactions?limit=1000");
+    const json = await res.json();
+
+    const txns = json.transactions || [];
+    console.log("Transactions from API:", txns);
+
+    setTransactions(txns);
+
+    // 1) Totals
+    let revenue = 0;
+    let expenses = 0;
+
+    txns.forEach((t) => {
+      const amt = Math.abs(Number(t.amount) || 0);
+      if (t.type === "income") revenue += amt;
+      else if (t.type === "expense") expenses += amt;
+    });
+
+    setTotalRevenue(revenue);
+    setTotalExpenses(expenses);
+
+    // 2) Build last 6 months buckets
+    const monthlyMap = {};
+    const now = new Date();
+
+    // for (let i = 5; i >= 0; i--) {
+    //   const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    //   const key = d.toISOString().slice(0, 7); // "YYYY-MM"
+    //   monthlyMap[key] = { revenue: 0, expenses: 0, net: 0 };
+    // }
+    for (let i = 5; i >= 0; i--) {
+  const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+  // Use getMonth() + 1 so month is 1..12 and not affected by timezone offsets
+  const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; // "YYYY-MM"
+  monthlyMap[key] = { revenue: 0, expenses: 0, net: 0 };
+}
+
+
+    txns.forEach((t) => {
+      if (!t.date) return;
+      const dateObj = new Date(t.date);
+      if (isNaN(dateObj.getTime())) return;
+
+      const key = dateObj.toISOString().slice(0, 7);
+      if (!monthlyMap[key]) return; // ignore older/newer than 6 months
+
+      const amt = Math.abs(Number(t.amount) || 0);
+      if (t.type === "income") {
+        monthlyMap[key].revenue += amt;
+        monthlyMap[key].net += amt;
+      } else if (t.type === "expense") {
+        monthlyMap[key].expenses += amt;
+        monthlyMap[key].net -= amt;
+      }
+    });
+
+    const chartData = Object.entries(monthlyMap).map(([month, data]) => ({
+      month: new Date(month + "-01").toLocaleDateString("en-US", { month: "short" }),
+      Income: data.revenue,
+      Expenses: data.expenses,
+      Net: data.net,
+    }));
+
+    console.log("Monthly chart data:", chartData);
+    setMonthlyData(chartData);
+
+    // 3) Category breakdown (only expenses)
+    const categoryMap = {};
+    txns
+      .filter((t) => t.type === "expense")
+      .forEach((t) => {
+        const cat = t.category || "General";
+        const amt = Math.abs(Number(t.amount) || 0);
+        categoryMap[cat] = (categoryMap[cat] || 0) + amt;
+      });
+
+    const topCategories = Object.entries(categoryMap)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([category, amount]) => ({ category, amount }));
+
+    console.log("Category breakdown:", topCategories);
+    setCategoryBreakdown(topCategories);
+  } catch (err) {
+    console.error("Failed to load finance data:", err);
+    setToast({
+      open: true,
+      type: "error",
+      message: "Failed to load finance data",
+    });
+  } finally {
+    setLoading(false);
+  }
+}
+
 
   function resetAddForm() {
     setAmount("");
@@ -120,25 +286,23 @@ export default function FinancePage() {
     setProject("");
   }
 
-  async function handleAdd(e) {
-    e?.preventDefault?.();
+  async function handleAdd() {
     if (!amount || isNaN(Number(amount))) {
       setToast({ open: true, type: "error", message: "Enter a valid amount" });
       return;
     }
     setSubmitting(true);
 
-const optimistic = {
-  _id: "tmp-" + Date.now(),
-  // store amount positive; sign is indicated by `type`
-  amount: Math.abs(Number(amount)),
-  type,
-  category,
-  description,
-  date,
-  project,
-  status: "completed",
-};
+    const optimistic = {
+      _id: "tmp-" + Date.now(),
+      amount: Math.abs(Number(amount)),
+      type,
+      category,
+      description,
+      date,
+      project,
+      status: "completed",
+    };
     setTransactions((prev) => [optimistic, ...prev]);
 
     try {
@@ -159,7 +323,6 @@ const optimistic = {
         setTransactions((prev) => prev.filter((t) => t._id !== optimistic._id));
         setToast({ open: true, type: "error", message: json.error || "Could not add transaction" });
       } else {
-        // replace optimistic with server returned transaction
         setTransactions((prev) => {
           const replaced = prev.map((t) => (t._id === optimistic._id ? json.transaction : t));
           if (!replaced.some((t) => t._id === json.transaction._id)) {
@@ -169,10 +332,9 @@ const optimistic = {
         });
         setToast({ open: true, type: "success", message: "Transaction added" });
         resetAddForm();
+        loadFinanceData();
         try { router.refresh(); } catch (_) {}
-        // tell other components to refresh (ReportsWidget listens for this)
-window.dispatchEvent(new Event("transactionsUpdated"));
-
+        window.dispatchEvent(new Event("transactionsUpdated"));
       }
     } catch (err) {
       console.error(err);
@@ -191,8 +353,7 @@ window.dispatchEvent(new Event("transactionsUpdated"));
     });
   }
 
-  async function handleEditSave(e) {
-    e?.preventDefault?.();
+  async function handleEditSave() {
     if (!editing) return;
     if (isNaN(Number(editing.amount))) {
       setToast({ open: true, type: "error", message: "Enter a valid amount" });
@@ -220,10 +381,9 @@ window.dispatchEvent(new Event("transactionsUpdated"));
         setTransactions((prev) => prev.map((t) => (String(t._id) === String(editing._id) ? json.transaction : t)));
         setToast({ open: true, type: "success", message: "Transaction updated" });
         setEditing(null);
+        loadFinanceData();
         try { router.refresh(); } catch (_) {}
-        // tell other components to refresh (ReportsWidget listens for this)
-window.dispatchEvent(new Event("transactionsUpdated"));
-
+        window.dispatchEvent(new Event("transactionsUpdated"));
       }
     } catch (err) {
       console.error(err);
@@ -243,10 +403,9 @@ window.dispatchEvent(new Event("transactionsUpdated"));
       } else {
         setTransactions((prev) => prev.filter((t) => String(t._id) !== String(id)));
         setToast({ open: true, type: "success", message: "Transaction deleted" });
+        loadFinanceData();
         try { router.refresh(); } catch (_) {}
-        // tell other components to refresh (ReportsWidget listens for this)
-window.dispatchEvent(new Event("transactionsUpdated"));
-
+        window.dispatchEvent(new Event("transactionsUpdated"));
       }
     } catch (err) {
       console.error(err);
@@ -254,55 +413,41 @@ window.dispatchEvent(new Event("transactionsUpdated"));
     }
   }
 
-   const netBalance = transactions.reduce((acc, t) => {
-  const amt = Number(t.amount) || 0;
-  return acc + (t.type === "expense" ? -amt : amt);
-}, 0);
-
+  const netBalance = totalRevenue - totalExpenses;
 
   return (
     <div className="p-8 space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Finance</h1>
-          <p className="text-sm text-gray-600 mt-1">Add, view and manage your transactions</p>
+          <h1 className="text-4xl font-bold text-[var(--foreground)]">Finance</h1>
+          <p className="text-gray-600 mt-1">Add, view and manage your transactions</p>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="text-right">
             <div className="text-xs text-gray-500">Net Balance</div>
             <div className="text-lg font-semibold">
-  {netBalance >= 0 ? (
-    <span className="text-teal-700">+ ${Math.abs(netBalance).toLocaleString()}</span>
-  ) : (
-    <span className="text-red-600">- ${Math.abs(netBalance).toLocaleString()}</span>
-  )}
-</div>
-
+              {netBalance >= 0 ? (
+                <span className="text-teal-700">+ ${Math.abs(netBalance).toLocaleString()}</span>
+              ) : (
+                <span className="text-red-600">- ${Math.abs(netBalance).toLocaleString()}</span>
+              )}
+            </div>
           </div>
-          <Button
-            variant="outline"
-            onClick={async () => {
-              setLoading(true);
-              const r = await fetch("/api/transactions?limit=50");
-              const j = await r.json();
-              setTransactions(j.transactions || []);
-              setLoading(false);
-            }}
-          >
+          <Button variant="outline" onClick={loadFinanceData}>
             <RefreshCcw className="w-4 h-4 mr-2 ml-1" /> Refresh
           </Button>
         </div>
       </div>
 
-      {/* Add form (prominent) */}
+      {/* Add form */}
       <Card className="rounded-2xl p-6" style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)" }}>
         <CardHeader className="p-0 mb-4">
           <CardTitle>Add Transaction</CardTitle>
         </CardHeader>
 
         <CardContent className="p-0">
-          <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-6 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
             <div className="md:col-span-1">
               <label className="text-xs text-gray-600">Amount</label>
               <Input placeholder="e.g. 1200" value={amount} onChange={(e) => setAmount(e.target.value)} />
@@ -337,17 +482,214 @@ window.dispatchEvent(new Event("transactionsUpdated"));
             </div>
 
             <div className="md:col-span-2 flex items-center gap-3 mt-2">
-              <Button type="submit" className="h-11 p-2" disabled={submitting}>
+              <Button onClick={handleAdd} className="h-11 p-2" disabled={submitting}>
                 <Plus className="w-4 h-4 mr-2" />
                 {submitting ? "Adding..." : "Add Transaction"}
               </Button>
               <Button variant="outline" onClick={resetAddForm} className="h-11 p-2 m-1">Reset</Button>
             </div>
-          </form>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Transactions table (primary) */}
+      {/* Full Width Bar Chart - Income vs Expenses */}
+      <Card className="rounded-2xl p-6" style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)" }}>
+        <CardHeader className="p-0 mb-4">
+          <CardTitle>Income vs Expenses (Last 6 Months)</CardTitle>
+          <p className="text-sm text-gray-600 mt-1">Monthly financial overview</p>
+        </CardHeader>
+        <CardContent className="p-0">
+          {/* {loading ? (
+            <div className="h-[350px] flex items-center justify-center text-gray-500">Loading chart...</div>
+          ) : monthlyData.length === 0 || monthlyData.every(d => d.Income === 0 && d.Expenses === 0) ? (
+            <div className="h-[350px] flex items-center justify-center">
+              <div className="text-center">
+                <TrendingUp className="w-16 h-16 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">No transaction data available yet</p>
+                <p className="text-sm text-gray-400 mt-1">Add transactions to see charts</p>
+              </div>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart data={monthlyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="month" tick={{ fill: "#6b7280", fontSize: 12 }} />
+                <YAxis tick={{ fill: "#6b7280", fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "rgba(255,255,255,0.98)",
+                    borderRadius: "12px",
+                    border: "1px solid rgba(0,0,0,0.08)",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="Income" fill="#14b8a6" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="Expenses" fill="#fbbf24" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )} */}
+          {loading ? (
+  <div className="h-[350px] flex items-center justify-center text-gray-500">
+    Loading chart...
+  </div>
+) : transactions.length === 0 ? (
+  <div className="h-[350px] flex items-center justify-center">
+    <div className="text-center">
+      <TrendingUp className="w-16 h-16 text-gray-300 mx-auto mb-3" />
+      <p className="text-gray-500">No transaction data available yet</p>
+      <p className="text-sm text-gray-400 mt-1">Add transactions to see charts</p>
+    </div>
+  </div>
+) : (
+  <ResponsiveContainer width="100%" height={350}>
+    <BarChart data={monthlyData}>
+      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+      <XAxis dataKey="month" tick={{ fill: "#6b7280", fontSize: 12 }} />
+      <YAxis tick={{ fill: "#6b7280", fontSize: 12 }} />
+      <Tooltip
+        contentStyle={{
+          backgroundColor: "rgba(255,255,255,0.98)",
+          borderRadius: "12px",
+          border: "1px solid rgba(0,0,0,0.08)",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+        }}
+      />
+      <Legend />
+      <Bar dataKey="Income" fill="#14b8a6" radius={[8, 8, 0, 0]} />
+      <Bar dataKey="Expenses" fill="#fbbf24" radius={[8, 8, 0, 0]} />
+    </BarChart>
+  </ResponsiveContainer>
+)}
+
+        </CardContent>
+      </Card>
+
+      {/* Two Column Layout - Net Trend & Category Breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Net Balance Trend */}
+        <Card className="rounded-2xl p-6" style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)" }}>
+          <CardHeader className="p-0 mb-4">
+            <CardTitle>Net Balance Trend</CardTitle>
+            <p className="text-sm text-gray-600 mt-1">Monthly profit/loss overview</p>
+          </CardHeader>
+          <CardContent className="p-0">
+            {/* {loading ? (
+              <div className="h-[280px] flex items-center justify-center text-gray-500">Loading...</div>
+            ) : monthlyData.length === 0 || monthlyData.every(d => d.Net === 0) ? (
+              <div className="h-[280px] flex items-center justify-center text-gray-400">
+                <p>No data available</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="month" tick={{ fill: "#6b7280", fontSize: 12 }} />
+                  <YAxis tick={{ fill: "#6b7280", fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "rgba(255,255,255,0.98)",
+                      borderRadius: "12px",
+                      border: "1px solid rgba(0,0,0,0.08)",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="Net" 
+                    stroke="#6366f1" 
+                    strokeWidth={3}
+                    dot={{ fill: "#6366f1", r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )} */}
+            {loading ? (
+  <div className="h-[280px] flex items-center justify-center text-gray-500">
+    Loading...
+  </div>
+) : transactions.length === 0 ? (
+  <div className="h-[280px] flex items-center justify-center text-gray-400">
+    <p>No data available</p>
+  </div>
+) : (
+  <ResponsiveContainer width="100%" height={280}>
+    <LineChart data={monthlyData}>
+      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+      <XAxis dataKey="month" tick={{ fill: "#6b7280", fontSize: 12 }} />
+      <YAxis tick={{ fill: "#6b7280", fontSize: 12 }} />
+      <Tooltip
+        contentStyle={{
+          backgroundColor: "rgba(255,255,255,0.98)",
+          borderRadius: "12px",
+          border: "1px solid rgba(0,0,0,0.08)",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+        }}
+      />
+      <Line
+        type="monotone"
+        dataKey="Net"
+        stroke="#6366f1"
+        strokeWidth={3}
+        dot={{ fill: "#6366f1", r: 4 }}
+        activeDot={{ r: 6 }}
+      />
+    </LineChart>
+  </ResponsiveContainer>
+)}
+
+          </CardContent>
+        </Card>
+
+        {/* Top Expense Categories */}
+        <Card className="rounded-2xl p-6" style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)" }}>
+          <CardHeader className="p-0 mb-4">
+            <CardTitle>Top Expense Categories</CardTitle>
+            <p className="text-sm text-gray-600 mt-1">Where your money goes</p>
+          </CardHeader>
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="h-[280px] flex items-center justify-center text-gray-500">Loading...</div>
+            ) : categoryBreakdown.length === 0 ? (
+              <div className="h-[280px] flex items-center justify-center">
+                <div className="text-center">
+                  <TrendingDown className="w-16 h-16 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">No expense categories yet</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {categoryBreakdown.map((item, idx) => {
+                  const colors = ["#14b8a6", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4"];
+                  const maxAmount = Math.max(...categoryBreakdown.map(c => c.amount));
+                  const percentage = (item.amount / maxAmount) * 100;
+                  
+                  return (
+                    <div key={idx}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">{item.category}</span>
+                        <span className="text-sm font-bold text-gray-900">${item.amount.toLocaleString()}</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-3">
+                        <div
+                          className="h-3 rounded-full transition-all shadow-sm"
+                          style={{
+                            width: `${percentage}%`,
+                            backgroundColor: colors[idx % colors.length],
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Transactions table */}
       <Card className="rounded-2xl p-6" style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)" }}>
         <CardHeader className="p-0 mb-4">
           <CardTitle>Recent Transactions</CardTitle>
@@ -372,16 +714,15 @@ window.dispatchEvent(new Event("transactionsUpdated"));
                 <tbody>
                   {transactions.length === 0 ? (
                     <tr><td colSpan={6} className="py-12 text-center text-gray-500">No transactions yet</td></tr>
-                  ) : transactions.map((tx) => (
+                  ) : transactions.slice(0, 50).map((tx) => (
                     <tr key={tx._id || tx.id} className="hover:bg-white/40 transition">
                       <td className="py-3 text-gray-600">{tx.date ? new Date(tx.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "-"}</td>
                       <td className="text-gray-900 font-medium">{tx.description || "-"}</td>
                       <td><Badge className="bg-gray-100 text-gray-700">{tx.category || "General"}</Badge></td>
                       <td><Badge className={tx.status === "completed" ? "bg-teal-100 text-teal-700" : "bg-amber-100 text-amber-700"}>{tx.status || "completed"}</Badge></td>
-                      <td className={`text-right font-semibold pr-2 ${tx.type === "expense" ? "text-red-600" : "text-teal-600"}`}>
-  {tx.type === "expense" ? `- $${Number(tx.amount).toLocaleString()}` : `+ $${Number(tx.amount).toLocaleString()}`}
-</td>
-
+                      <td className={`text-right font-semibold pr-2 ${tx.type === "expense" ? "text-red-500" : "text-teal-600"}`}>
+                        {tx.type === "expense" ? `- $${Number(tx.amount).toLocaleString()}` : `+ $${Number(tx.amount).toLocaleString()}`}
+                      </td>
                       <td className="text-right pr-2">
                         <div className="inline-flex items-center gap-2">
                           <button title="Edit" onClick={() => openEdit(tx)} className="p-2 rounded-md hover:bg-gray-100">
@@ -404,7 +745,7 @@ window.dispatchEvent(new Event("transactionsUpdated"));
       {/* Edit slide-over */}
       <SlideOver open={!!editing} onClose={() => setEditing(null)} title="Edit Transaction">
         {editing && (
-          <form onSubmit={handleEditSave} className="space-y-4">
+          <div className="space-y-4">
             <div>
               <label className="text-xs text-gray-600">Amount</label>
               <Input value={editing.amount} onChange={(e) => setEditing({ ...editing, amount: e.target.value })} />
@@ -439,12 +780,12 @@ window.dispatchEvent(new Event("transactionsUpdated"));
             </div>
 
             <div className="flex items-center gap-3 p-4 m-2">
-              <Button type="button" onClick={handleEditSave} disabled={editSubmitting}>
+              <Button onClick={handleEditSave} disabled={editSubmitting}>
                 {editSubmitting ? "Saving..." : "Save changes"}
               </Button>
               <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
             </div>
-          </form>
+          </div>
         )}
       </SlideOver>
 

@@ -34,11 +34,30 @@ export const authOptions = {
     }),
   ],
   callbacks: {
-  async session({ session, user }) {
-    // ensure session.user.id is set (Credentials provider returns id already)
-    session.user = session.user || {};
-    // prefer user.id (from adapter / authorize), fallback to existing, fallback to null
-    session.user.id = user?.id || user?._id?.toString?.() || session.user.id || null;
+  // async session({ session, user }) {
+  //   // ensure session.user.id is set (Credentials provider returns id already)
+  //   session.user = session.user || {};
+  //   // prefer user.id (from adapter / authorize), fallback to existing, fallback to null
+  //   session.user.id = user?.id || user?._id?.toString?.() || session.user.id || null;
+  //   return session;
+  // },
+  async session({ session, token }) {
+    if (session?.user) {
+      // ✅ Make sure user.id is set from token
+      session.user.id = token.sub;
+      
+      // ✅ Also fetch the actual MongoDB _id
+      try {
+        await connectDB();
+        const dbUser = await User.findOne({ email: session.user.email }).lean();
+        if (dbUser) {
+          session.user.id = String(dbUser._id);
+          session.user._id = String(dbUser._id);
+        }
+      } catch (err) {
+        console.error("Session callback error:", err);
+      }
+    }
     return session;
   },
   async jwt({ token, user }) {

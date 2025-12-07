@@ -2054,6 +2054,8 @@ import AssignModal from "@/components/AssignModal";
 import EditTaskModal from "@/components/EditTaskModal";
 import FilterModal from "@/components/FilterModal";
 import TeamModal from "@/components/TeamModal";
+import WorkspaceSwitcher from "@/components/WorkspaceSwitcher";
+import WorkspaceActions from "@/components/WorkspaceActions";
 
 const columnDefinitions = [
   { id: "todo", title: "To Do" },
@@ -2090,7 +2092,147 @@ async function safeFetchJson(url, opts = {}) {
 }
 
 /* ------- TaskCard ------- */
-function TaskCard({ task, columnId, onToggle, onDelete, members = [], workspaceId }) {
+// function TaskCard({ task, columnId, onToggle, onDelete, members = [], workspaceId }) {
+//   const [{ isDragging }, drag] = useDrag(
+//     () => ({
+//       type: "TASK",
+//       item: { id: task.id, fromColumn: columnId },
+//       collect: (monitor) => ({ isDragging: monitor.isDragging() }),
+//     }),
+//     [task, columnId]
+//   );
+
+//   const [openAssign, setOpenAssign] = useState(false);
+//   const [openEdit, setOpenEdit] = useState(false);
+
+//   // helper to render initials safely
+//   // const renderInitials = (assigneeId) => {
+//   //   const m = members.find((x) => String(x.id) === String(assigneeId) || String(x._id) === String(assigneeId));
+//   //   if (m && m.name) return m.name.split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase();
+//   //   if (typeof assigneeId === "string" && assigneeId.includes("@")) return assigneeId.split("@")[0].slice(0, 2).toUpperCase();
+//   //   return "??";
+//   // };
+//   // Inside TaskCard component, replace renderInitials with this:
+// const renderInitials = (assigneeId) => {
+//   // First try to find in members list
+//   const m = members.find(
+//     (x) => String(x.id) === String(assigneeId) || 
+//            String(x._id) === String(assigneeId)
+//   );
+  
+//   if (m) {
+//     // If member found and has initials, use them
+//     if (m.initials) return m.initials;
+//     // Otherwise compute from name
+//     if (m.name) {
+//       return m.name
+//         .split(" ")
+//         .map(s => s[0])
+//         .slice(0, 2)
+//         .join("")
+//         .toUpperCase() || "??";
+//     }
+//   }
+  
+//   // If assignee is an email, extract initials from it
+//   if (typeof assigneeId === "string" && assigneeId.includes("@")) {
+//     return assigneeId.split("@")[0].slice(0, 2).toUpperCase();
+//   }
+  
+//   // Last resort
+//   return "??";
+// };
+
+//   return (
+//     <>
+//       <div
+//         ref={drag}
+//         className={`glass-strong p-5 rounded-xl border border-white/50 hover:shadow-lg transition-all duration-200 cursor-move ${isDragging ? "opacity-50" : ""
+//           }`}
+//       >
+//         <div className="flex items-start justify-between mb-3">
+//           <h4 className={`text-sm text-gray-900 font-medium ${task.status === "completed" ? "line-through text-gray-400" : ""}`}>
+//             {task.title}
+//           </h4>
+
+//           <div className="flex items-center gap-2">
+//             <button onClick={() => setOpenEdit(true)} className="text-gray-400 hover:text-gray-600" title="Edit">
+//               <MoreVertical className="w-4 h-4" strokeWidth={1.5} />
+//             </button>
+//             <button onClick={() => setOpenAssign(true)} className="text-gray-400 hover:text-teal-600" title="Assign">
+//               <Users className="w-4 h-4" />
+//             </button>
+//           </div>
+//         </div>
+
+//         <p className="text-sm text-gray-600 mb-4 leading-relaxed">{task.description}</p>
+
+//         <div className="flex flex-wrap gap-2 mb-4">
+//           {(task.tags || []).map((tag) => (
+//             <Badge key={tag} variant="secondary" className="text-xs bg-teal-50 text-teal-700">
+//               {tag}
+//             </Badge>
+//           ))}
+//         </div>
+
+//         <div className="flex items-center justify-between">
+//           <span className={`px-2 py-0.5 rounded-lg text-xs font-medium capitalize ${priorityBadgeClasses[task.priority || "medium"]}`}>
+//             {task.priority || "medium"}
+//           </span>
+
+//           <div className="flex items-center gap-3">
+//             <div className="flex items-center gap-1.5 text-xs text-gray-500">
+//               <Calendar className="w-3.5 h-3.5" strokeWidth={1.5} />
+//               {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "No date"}
+//             </div>
+//             <div className="flex -space-x-2">
+//               {(task.assignees || []).map((a) => (
+//                 <div
+//                   key={String(a)}
+//                   className="w-7 h-7 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-xs text-white font-medium border-2 border-white shadow-sm"
+//                   title={String(a)}
+//                 >
+//                   {renderInitials(a)}
+//                 </div>
+//               ))}
+//             </div>
+//           </div>
+//         </div>
+
+//         <div className="mt-3 flex gap-3 justify-end">
+//           <button onClick={() => onToggle(task)} className="text-sm text-teal-600">
+//             {task.status === "completed" ? "Undo" : "Complete"}
+//           </button>
+//           <button
+//             onClick={() => {
+//               if (confirm("Delete this task?")) onDelete(task.id);
+//             }}
+//             className="text-sm text-red-600"
+//           >
+//             Delete
+//           </button>
+//         </div>
+//       </div>
+
+//       <AssignModal
+//         open={openAssign}
+//         onClose={() => setOpenAssign(false)}
+//         task={task}
+//         workspaceId={workspaceId}
+//         onAssigned={(updated) => window.dispatchEvent(new CustomEvent("task-updated", { detail: updated }))}
+//       />
+
+//       <EditTaskModal
+//         open={openEdit}
+//         onClose={() => setOpenEdit(false)}
+//         task={task}
+//         onSaved={(updated) => window.dispatchEvent(new CustomEvent("task-updated", { detail: updated }))}
+//       />
+//     </>
+//   );
+// }
+// Replace your TaskCard component with this complete version
+function TaskCard({ task, columnId, onToggle, onDelete, workspaceId }) {
   const [{ isDragging }, drag] = useDrag(
     () => ({
       type: "TASK",
@@ -2102,14 +2244,34 @@ function TaskCard({ task, columnId, onToggle, onDelete, members = [], workspaceI
 
   const [openAssign, setOpenAssign] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
+  const [assignedMembers, setAssignedMembers] = useState([]);
 
-  // helper to render initials safely
-  const renderInitials = (assigneeId) => {
-    const m = members.find((x) => String(x.id) === String(assigneeId) || String(x._id) === String(assigneeId));
-    if (m && m.name) return m.name.split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase();
-    if (typeof assigneeId === "string" && assigneeId.includes("@")) return assigneeId.split("@")[0].slice(0, 2).toUpperCase();
-    return "??";
-  };
+  // ✅ Load actual member details when task assignees change
+  useEffect(() => {
+    if (task.assignees && task.assignees.length > 0 && workspaceId) {
+      loadAssignedMembers();
+    } else {
+      setAssignedMembers([]);
+    }
+  }, [task.assignees, workspaceId]);
+
+  async function loadAssignedMembers() {
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/members`);
+      const json = await res.json();
+      
+      if (json.success) {
+        const allMembers = json.data || [];
+        // Filter to only assigned members
+        const assigned = allMembers.filter(m => 
+          task.assignees.some(a => String(a) === String(m.id || m._id))
+        );
+        setAssignedMembers(assigned);
+      }
+    } catch (err) {
+      console.error("Failed to load assigned members:", err);
+    }
+  }
 
   return (
     <>
@@ -2120,51 +2282,84 @@ function TaskCard({ task, columnId, onToggle, onDelete, members = [], workspaceI
         }`}
       >
         <div className="flex items-start justify-between mb-3">
-          <h4 className={`text-sm text-gray-900 font-medium ${task.status === "completed" ? "line-through text-gray-400" : ""}`}>
+          <h4
+            className={`text-sm text-gray-900 font-medium ${
+              task.status === "completed" ? "line-through text-gray-400" : ""
+            }`}
+          >
             {task.title}
           </h4>
 
           <div className="flex items-center gap-2">
-            <button onClick={() => setOpenEdit(true)} className="text-gray-400 hover:text-gray-600" title="Edit">
+            <button
+              onClick={() => setOpenEdit(true)}
+              className="text-gray-400 hover:text-gray-600"
+              title="Edit"
+            >
               <MoreVertical className="w-4 h-4" strokeWidth={1.5} />
             </button>
-            <button onClick={() => setOpenAssign(true)} className="text-gray-400 hover:text-teal-600" title="Assign">
+            <button
+              onClick={() => setOpenAssign(true)}
+              className="text-gray-400 hover:text-teal-600"
+              title="Assign"
+            >
               <Users className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        <p className="text-sm text-gray-600 mb-4 leading-relaxed">{task.description}</p>
+        <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+          {task.description}
+        </p>
 
         <div className="flex flex-wrap gap-2 mb-4">
           {(task.tags || []).map((tag) => (
-            <Badge key={tag} variant="secondary" className="text-xs bg-teal-50 text-teal-700">
+            <Badge
+              key={tag}
+              variant="secondary"
+              className="text-xs bg-teal-50 text-teal-700"
+            >
               {tag}
             </Badge>
           ))}
         </div>
 
         <div className="flex items-center justify-between">
-          <span className={`px-2 py-0.5 rounded-lg text-xs font-medium capitalize ${priorityBadgeClasses[task.priority || "medium"]}`}>
+          <span
+            className={`px-2 py-0.5 rounded-lg text-xs font-medium capitalize ${
+              priorityBadgeClasses[task.priority || "medium"]
+            }`}
+          >
             {task.priority || "medium"}
           </span>
 
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 text-xs text-gray-500">
               <Calendar className="w-3.5 h-3.5" strokeWidth={1.5} />
-              {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "No date"}
+              {task.dueDate
+                ? new Date(task.dueDate).toLocaleDateString()
+                : "No date"}
             </div>
-            <div className="flex -space-x-2">
-              {(task.assignees || []).map((a) => (
-                <div
-                  key={String(a)}
-                  className="w-7 h-7 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-xs text-white font-medium border-2 border-white shadow-sm"
-                  title={String(a)}
-                >
-                  {renderInitials(a)}
-                </div>
-              ))}
-            </div>
+            
+            {/* ✅ FIXED: Show assigned member avatars */}
+            {assignedMembers.length > 0 && (
+              <div className="flex -space-x-2">
+                {assignedMembers.slice(0, 3).map((member) => (
+                  <div
+                    key={member.id}
+                    className="w-7 h-7 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-xs text-white font-medium border-2 border-white shadow-sm"
+                    title={member.name}
+                  >
+                    {member.initials}
+                  </div>
+                ))}
+                {assignedMembers.length > 3 && (
+                  <div className="w-7 h-7 bg-gray-300 rounded-full flex items-center justify-center text-xs text-gray-700 font-medium border-2 border-white shadow-sm">
+                    +{assignedMembers.length - 3}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -2188,14 +2383,18 @@ function TaskCard({ task, columnId, onToggle, onDelete, members = [], workspaceI
         onClose={() => setOpenAssign(false)}
         task={task}
         workspaceId={workspaceId}
-        onAssigned={(updated) => window.dispatchEvent(new CustomEvent("task-updated", { detail: updated }))}
+        onAssigned={() => {
+          window.dispatchEvent(new Event("task-updated"));
+        }}
       />
 
       <EditTaskModal
         open={openEdit}
         onClose={() => setOpenEdit(false)}
         task={task}
-        onSaved={(updated) => window.dispatchEvent(new CustomEvent("task-updated", { detail: updated }))}
+        onSaved={() => {
+          window.dispatchEvent(new Event("task-updated"));
+        }}
       />
     </>
   );
@@ -2250,6 +2449,7 @@ export default function WorkspacePage() {
 
   const [members, setMembers] = useState([]);
   const [workspace, setWorkspace] = useState(null);
+  const [memberCount, setMemberCount] = useState(0);
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
 
   /* -------- init: fetch workspaces, pick first if any -------- */
@@ -2278,59 +2478,86 @@ export default function WorkspacePage() {
     return () => (mounted = false);
   }, []);
 
-  /* -------- load members (for initials) -------- */
-  /* -------- load members (for initials) -------- */
+  // Load member count when workspace changes
 useEffect(() => {
-  let mounted = true;
-  async function loadMembers() {
-    try {
-      // try singular endpoint first
-      const r = await safeFetchJson("/api/user");
-      if (!mounted) return;
-
-      let raw;
-
-      // if singular failed, try plural fallback
-      if (!r.ok) {
-        const r2 = await safeFetchJson("/api/users");
-        if (!mounted) return;
-        if (!r2.ok) {
-          console.warn("loadMembers: both /api/user and /api/users failed", r, r2);
-          setMembers([]);
-          return;
+  if (workspace?._id) {
+    fetch(`/api/workspaces/${workspace._id}/members`)
+      .then(r => r.json())
+      .then(json => {
+        if (json.success) {
+          setMemberCount(json.data?.length || 0);
         }
-        raw = r2.data?.data ?? r2.data ?? r2;
-      } else {
-        raw = r.data?.data ?? r.data ?? r;
-      }
-
-      // if server returned HTML (Next 404 page) it'll be a string — bail safely
-      if (typeof raw === "string") {
-        console.warn("loadMembers: server returned a string (probably HTML). Ignoring.", raw.slice(0, 300));
-        raw = [];
-      }
-
-      // normalize single object -> array, null -> []
-      if (!Array.isArray(raw)) {
-        if (raw == null) raw = [];
-        else raw = [raw];
-      }
-
-      const mapped = raw.map((u) => ({
-        id: u?._id ?? u?.id ?? u?.email ?? Math.random().toString(36).slice(2),
-        name: u?.name ?? u?.email ?? "Unknown",
-        email: u?.email ?? null,
-      }));
-
-      if (mounted) setMembers(mapped);
-    } catch (err) {
-      console.error("loadMembers error:", err);
-      if (mounted) setMembers([]);
-    }
+      })
+      .catch(err => console.error("Failed to load member count:", err));
   }
-  loadMembers();
-  return () => (mounted = false);
-}, []);
+}, [workspace?._id]);
+
+// Also update count when team modal closes
+useEffect(() => {
+  if (!teamOpen && workspace?._id) {
+    fetch(`/api/workspaces/${workspace._id}/members`)
+      .then(r => r.json())
+      .then(json => {
+        if (json.success) {
+          setMemberCount(json.data?.length || 0);
+        }
+      });
+  }
+}, [teamOpen, workspace?._id]);
+
+  /* -------- load members (for initials) -------- */
+  /* -------- load members (for initials) -------- */
+  useEffect(() => {
+    let mounted = true;
+    async function loadMembers() {
+      try {
+        // try singular endpoint first
+        const r = await safeFetchJson("/api/user");
+        if (!mounted) return;
+
+        let raw;
+
+        // if singular failed, try plural fallback
+        if (!r.ok) {
+          const r2 = await safeFetchJson("/api/users");
+          if (!mounted) return;
+          if (!r2.ok) {
+            console.warn("loadMembers: both /api/user and /api/users failed", r, r2);
+            setMembers([]);
+            return;
+          }
+          raw = r2.data?.data ?? r2.data ?? r2;
+        } else {
+          raw = r.data?.data ?? r.data ?? r;
+        }
+
+        // if server returned HTML (Next 404 page) it'll be a string — bail safely
+        if (typeof raw === "string") {
+          console.warn("loadMembers: server returned a string (probably HTML). Ignoring.", raw.slice(0, 300));
+          raw = [];
+        }
+
+        // normalize single object -> array, null -> []
+        if (!Array.isArray(raw)) {
+          if (raw == null) raw = [];
+          else raw = [raw];
+        }
+
+        const mapped = raw.map((u) => ({
+          id: u?._id ?? u?.id ?? u?.email ?? Math.random().toString(36).slice(2),
+          name: u?.name ?? u?.email ?? "Unknown",
+          email: u?.email ?? null,
+        }));
+
+        if (mounted) setMembers(mapped);
+      } catch (err) {
+        console.error("loadMembers error:", err);
+        if (mounted) setMembers([]);
+      }
+    }
+    loadMembers();
+    return () => (mounted = false);
+  }, []);
 
 
   /* -------- loadTasks (requires workspace._id) -------- */
@@ -2460,73 +2687,103 @@ useEffect(() => {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="p-10 bg-gradient-to-br from-gray-50 via-amber-50/20 to-transparent min-h-screen">
+      <div className="p-8 bg-gradient-to-br from-gray-50 via-amber-50/20 to-transparent min-h-screen">
         <div className="mb-10">
+          <WorkspaceSwitcher
+                currentWorkspaceId={workspace?._id}
+                onSwitch={async (newId) => {
+                  const res = await fetch(`/api/workspaces/${newId}`);
+                  const json = await res.json();
+                  if (json.success) {
+                    setWorkspace(json.data);
+                  }
+                }}
+              />
           <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-3xl text-gray-900 mb-2" style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700 }}>
-                {workspace ? workspace.name : "Workspace"}
-              </h2>
-              <p className="text-gray-600">Track progress and manage team tasks</p>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center justify-between w-full">
+  <div>
+    <h2 className="text-4xl text-[var(--foreground)] m-2" style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700 }}>
+      {workspace ? workspace.name : "Workspace"}
+    </h2>
+    <p className="text-gray-600 mb-1">Track progress and manage team tasks</p>
+  </div>
+  
+  {workspace && (
+    <WorkspaceActions 
+      workspace={workspace} 
+      onWorkspaceUpdated={() => {
+        // Reload workspace after edit
+        if (workspace?._id) {
+          fetch(`/api/workspaces/${workspace._id}`)
+            .then(r => r.json())
+            .then(json => {
+              if (json.success) setWorkspace(json.data);
+            });
+        }
+      }}
+    />
+  )}
+</div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Button variant="outline" onClick={() => setTeamOpen(true)} className="gap-2 glass-strong border-white/50 hover:bg-white/80 rounded-xl h-11">
-                <Users className="w-4 h-4" /> Team
-              </Button>
+                <div className="flex items-center gap-3">
+                  <Button variant="outline" onClick={() => setTeamOpen(true)} className="gap-2 glass-strong border-white/50 hover:bg-white/80 rounded-xl h-11">
+                    <Users className="w-4 h-4" /> Team
+                  </Button>
 
-              <Button variant="outline" onClick={() => setIsFilterOpen(true)} className="gap-2 glass-strong border-white/50 hover:bg-white/80 rounded-xl h-11">
-                <Tag className="w-4 h-4" /> Filter
-              </Button>
+                  <Button variant="outline" onClick={() => setIsFilterOpen(true)} className="gap-2 glass-strong border-white/50 hover:bg-white/80 rounded-xl h-11">
+                    <Tag className="w-4 h-4" /> Filter
+                  </Button>
 
-              <Button onClick={() => document.getElementById("add-task-form")?.scrollIntoView({ behavior: "smooth" })} className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-xl h-11">
-                <Plus className="w-4 h-4" /> New Task
-              </Button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-4 gap-5">
-            {[
-              ["Total Tasks", totalTasks],
-              ["In Progress", inProgressCount],
-              ["Completed", completedCount],
-              ["Team Members", members.length || 0],
-            ].map(([label, num]) => (
-              <div key={label} className="glass-strong rounded-2xl p-5 border border-white/50 shadow-md">
-                <p className="text-sm text-gray-600 mb-1">{label}</p>
-                <p className="text-2xl text-gray-900" style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700 }}>
-                  {num}
-                </p>
+                  <Button onClick={() => document.getElementById("add-task-form")?.scrollIntoView({ behavior: "smooth" })} className="gap-2 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-xl h-11">
+                    <Plus className="w-4 h-4" /> New Task
+                  </Button>
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
 
-        <div id="add-task-form" className="bg-white shadow rounded-xl p-6 mb-8">
-          <form onSubmit={addTask} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <input className="border rounded p-2" placeholder="Task title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-            <select className="border rounded p-2" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-            <input className="border rounded p-2" type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
-            <textarea className="border rounded p-2 col-span-1 md:col-span-4" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-            <div className="col-span-1 md:col-span-4 flex gap-2">
-              <button className="bg-teal-600 text-white px-4 py-2 rounded" type="submit">Add Task</button>
-              <button type="button" onClick={() => setForm({ title: "", description: "", priority: "medium", dueDate: "" })} className="px-4 py-2 rounded border">Reset</button>
+              <div className="grid grid-cols-4 gap-5">
+                {[
+                  ["Total Tasks", totalTasks],
+                  ["In Progress", inProgressCount],
+                  ["Completed", completedCount],
+                  ["Team Members", memberCount],
+                ].map(([label, num]) => (
+                  <div key={label} className="glass-strong rounded-2xl p-5 border border-white/50 shadow-md">
+                    <p className="text-sm text-gray-600 mb-1">{label}</p>
+                    <p className="text-2xl text-gray-900" style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700 }}>
+                      {num}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
-          </form>
-        </div>
 
-        <div className="flex flex-wrap gap-5 w-full pb-6">
-          {loading ? <div>Loading tasks...</div> : columns.map((col) => <ColumnComponent key={col.id} column={col} onDrop={handleDrop} onToggle={toggleComplete} onDelete={deleteTask} members={members} workspaceId={workspace?._id} />)}
-        </div>
+            <div id="add-task-form" className="bg-white shadow rounded-xl p-6 mb-8">
+              <form onSubmit={addTask} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <input className="border rounded p-2" placeholder="Task title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+                <select className="border rounded p-2" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+                <input className="border rounded p-2" type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
+                <textarea className="border rounded p-2 col-span-1 md:col-span-4" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+                <div className="col-span-1 md:col-span-4 flex gap-2">
+                  <button className="bg-teal-600 text-white px-4 py-2 rounded" type="submit">Add Task</button>
+                  <button type="button" onClick={() => setForm({ title: "", description: "", priority: "medium", dueDate: "" })} className="px-4 py-2 rounded border">Reset</button>
+                </div>
+              </form>
+            </div>
 
-        <TeamModal open={teamOpen} onClose={() => setTeamOpen(false)} workspaceId={workspace?._id} />
+            <div className="flex flex-wrap gap-5 w-full pb-6">
+              {loading ? <div>Loading tasks...</div> : columns.map((col) => <ColumnComponent key={col.id} column={col} onDrop={handleDrop} onToggle={toggleComplete} onDelete={deleteTask} members={members} workspaceId={workspace?._id} />)}
+            </div>
 
-        <FilterModal open={isFilterOpen} onClose={() => setIsFilterOpen(false)} members={members} onApply={(f) => { setFilter(f); loadTasks(f); }} initial={filter} />
-      </div>
-    </DndProvider>
-  );
+            <TeamModal open={teamOpen} onClose={() => setTeamOpen(false)} workspaceId={workspace?._id} />
+
+            <FilterModal open={isFilterOpen} onClose={() => setIsFilterOpen(false)} members={members} onApply={(f) => { setFilter(f); loadTasks(f); }} initial={filter} />
+          </div>
+        </DndProvider>
+        );
 }
