@@ -12,7 +12,9 @@ cloudinary.v2.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export const config = { api: { bodyParser: false } };
+// export const config = { api: { bodyParser: false } };
+export const runtime = "nodejs";
+
 
 export async function POST(req) {
   try {
