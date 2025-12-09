@@ -12,7 +12,7 @@
 //     </html>
 //   );
 // }
-
+//src/app/layout.js
 import "./globals.css";
 import SessionWrapper from "./SessionWrapper";
 
@@ -26,6 +26,10 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className="bg-gray-100">
         <SessionWrapper>{children}</SessionWrapper>
+         {/* Soft Footer */}
+        <footer className="text-center py-6 text-sm text-muted-foreground mb-2">
+          Made with 💛 by Prachi
+        </footer>
       </body>
     </html>
   );

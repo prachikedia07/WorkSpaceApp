@@ -197,6 +197,7 @@ import { User } from "../../../connect/userModel";
 import Workspace from "../../../connect/workspaceModel";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../auth/[...nextauth]/authOptions";
+import { sendInvitationEmail } from "@/lib/email";
 
 export async function POST(req, { params }) {
   try {
@@ -287,38 +288,33 @@ export async function POST(req, { params }) {
 
     console.log("✅ Invitation created:", invitation._id);
 
-    // Try to send email (optional - don't fail if this fails)
+    // Send email using Nodemailer
     try {
-      const { Resend } = await import("resend");
-      const resend = new Resend(process.env.RESEND_API_KEY);
-
-      const inviterName = currentUser.name || currentUser.email;
-      const workspaceName = workspace.name;
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-      const inviteLink = `${appUrl}/register?invitation=${invitation.token}`;
+      const inviteLink = `${appUrl}/register?invitation=${invitation.token}&email=${encodeURIComponent(email)}`;
 
-      await resend.emails.send({
-        from: "TaskManager <onboarding@resend.dev>",
-        to: email,
-        subject: `${inviterName} invited you to ${workspaceName}`,
-        html: `
-          <h2>You've been invited!</h2>
-          <p><strong>${inviterName}</strong> invited you to join <strong>${workspaceName}</strong></p>
-          ${message ? `<p><em>"${message}"</em></p>` : ""}
-          <p><a href="${inviteLink}" style="background:#14b8a6;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;display:inline-block;">Accept Invitation</a></p>
-          <p style="color:#666;font-size:14px;">This invitation expires in 7 days.</p>
-        `,
+      const emailResult = await sendInvitationEmail(email, {
+        inviterName: currentUser.name || currentUser.email,
+        workspaceName: workspace.name,
+        message: message || "",
+        inviteLink,
       });
 
-      console.log("✅ Email sent to:", email);
+      if (emailResult.success) {
+        console.log("✅ Email sent successfully to:", email);
+      } else {
+        console.error("⚠️ Email send failed:", emailResult.error);
+        // Continue anyway - invitation is created
+      }
     } catch (emailError) {
-      console.error("⚠️ Email send failed (continuing anyway):", emailError.message);
+      console.error("⚠️ Email error (continuing anyway):", emailError.message);
+      // Don't fail the request if email fails
     }
 
     return NextResponse.json({
       success: true,
       data: invitation,
-      message: "Invitation sent successfully!",
+      message: "Invitation sent successfully! They will receive an email shortly.",
     });
   } catch (error) {
     console.error("❌ Invite route error:", error);

@@ -45,7 +45,7 @@
 //   }
 // }
 
-
+//src/app/api/user/update/route.js
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";

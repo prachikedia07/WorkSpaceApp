@@ -101,13 +101,15 @@ export default function Sidebar() {
         </nav>
 
         {/* Bottom Section */}
-        <div className="p-6 border-t border-white/20">
+        {/* <div className="p-6 border-t border-white/20">
           <div className="rounded-xl p-4 bg-white/60 backdrop-blur-md shadow-sm">
             <p className="text-xs text-gray-500 mb-1">Current Plan</p>
             <p className="text-sm text-gray-900 font-medium">Pro Account</p>
           </div>
-        </div>
+        </div> */}
+        
       </aside>
+      
     </>
   );
 }

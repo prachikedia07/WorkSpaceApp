@@ -561,8 +561,8 @@ export default function DashboardPage() {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Your Workspaces */}
-        <div className="lg:col-span-2 glass-strong rounded-2xl p-6 border border-white/50">
-          <div className="flex items-center justify-between mb-6">
+        <div className="lg:col-span-2 glass-strong rounded-2xl p-6 border border-gray-200">
+          <div className="flex items-center justify-between mb-5">
             <div>
               <h3 className="text-xl font-bold text-gray-900">Your Workspaces</h3>
               <p className="text-sm text-gray-600 mt-1">Manage your active projects</p>
@@ -577,18 +577,18 @@ export default function DashboardPage() {
           </div>
 
           {workspaces.length === 0 ? (
-            <div className="text-center py-12">
-              <Folder className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 mb-4">No workspaces yet</p>
+            <div className="text-center py-8">
+              <Folder className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 mb-3">No workspaces yet</p>
               <Link
                 href="/workspace"
-                className="inline-block px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
+                className="inline-block px-5 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
               >
                 Create Your First Workspace
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {workspaces.slice(0, 4).map((workspace, idx) => {
                 const gradients = [
                   "from-teal-400 to-cyan-600",
@@ -600,7 +600,7 @@ export default function DashboardPage() {
                   <Link
                     key={workspace._id}
                     href={`/workspace?id=${workspace._id}`}
-                    className="p-5 rounded-xl bg-gradient-to-br from-white to-gray-50 border border-gray-200 hover:border-teal-300 hover:shadow-lg transition-all group"
+                    className="p-4 rounded-lg bg-gradient-to-br from-white to-gray-50 border border-gray-200 hover:border-teal-300 hover:shadow-lg transition-all group"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div
@@ -612,7 +612,7 @@ export default function DashboardPage() {
                       </div>
                       <ChevronRight className="w-5 h-5 text-gray-400 group-hover:translate-x-1 group-hover:text-teal-600 transition" />
                     </div>
-                    <h4 className="font-semibold text-gray-900 mb-1 text-lg">
+                    <h4 className="font-semibold text-gray-900">
                       {workspace.name}
                     </h4>
                     <p className="text-sm text-gray-600">
@@ -693,8 +693,8 @@ export default function DashboardPage() {
       {/* Quick Actions & Insights */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Quick Actions */}
-        <div className="glass-strong rounded-2xl p-6 border border-white/50">
-          <div className="mb-6">
+        <div className="glass-strong rounded-2xl p-4 border border-gray-200">
+          <div className="mb-4">
             <h3 className="text-xl font-bold text-gray-900">Quick Actions</h3>
             <p className="text-sm text-gray-600 mt-1">Common tasks & shortcuts</p>
           </div>
@@ -745,14 +745,14 @@ export default function DashboardPage() {
         </div>
 
         {/* Financial Summary */}
-        <div className="glass-strong rounded-2xl p-6 border border-white/50">
-          <div className="mb-6">
+        <div className="glass-strong rounded-2xl p-4 border border-gray-200">
+          <div className="mb-4">
             <h3 className="text-xl font-bold text-gray-900">Financial Summary</h3>
             <p className="text-sm text-gray-600 mt-1">Total overview</p>
           </div>
 
-          <div className="space-y-4">
-            <div className="p-4 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
+          <div className="space-y-2">
+            <div className="p-3 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-700">Total Income</span>
                 <TrendingUp className="w-4 h-4 text-green-600" />
@@ -784,7 +784,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Upcoming Deadlines */}
-        <div className="glass-strong rounded-2xl p-6 border border-white/50">
+        <div className="glass-strong rounded-2xl p-4 border border-gray-200">
           <div className="mb-6">
             <h3 className="text-xl font-bold text-gray-900">Upcoming Deadlines</h3>
             <p className="text-sm text-gray-600 mt-1">Tasks due soon</p>
@@ -810,7 +810,7 @@ export default function DashboardPage() {
 
               <Link
                 href="/workspace"
-                className="block w-full text-center py-2.5 px-4 border-2 border-teal-600 text-teal-600 rounded-lg hover:bg-teal-50 transition text-sm font-medium"
+                className="block w-full text-center py-2.5 px-4 m-2 border-2 border-teal-600 text-teal-600 rounded-lg hover:bg-teal-50 transition text-sm font-medium"
               >
                 View All Tasks
               </Link>
@@ -868,7 +868,10 @@ export default function DashboardPage() {
             ))}
           </div>
         )}
+        
       </div>
+      
     </div>
+    
   );
 }
