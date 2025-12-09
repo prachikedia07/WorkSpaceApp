@@ -161,43 +161,110 @@ export const authOptions = {
      * JWT callback - Store only essential data in token
      * This runs on sign-in and whenever token is accessed
      */
-    async jwt({ token, user, trigger, session }) {
-      // On initial sign-in, user object is available
-      if (user) {
-        token.sub = user.id;
-        token.email = user.email;
-      }
+    // async jwt({ token, user, trigger, session }) {
+    //   // On initial sign-in, user object is available
+    //   if (user) {
+    //     token.sub = user.id;
+    //     token.email = user.email;
+    //   }
 
-      // When session is manually updated (e.g., after profile change)
-      if (trigger === "update") {
-        try {
-          await connectDB();
-          const dbUser = await User.findOne({ email: token.email }).lean();
-          if (dbUser) {
-            token.name = dbUser.name || `${dbUser.firstName || ""} ${dbUser.lastName || ""}`.trim();
-            token.avatar = dbUser.avatar || "";
-          }
-        } catch (e) {
-          console.error("jwt update error:", e);
-        }
-      }
+    //   // When session is manually updated (e.g., after profile change)
+    //   if (trigger === "update") {
+    //     try {
+    //       await connectDB();
+    //       const dbUser = await User.findOne({ email: token.email }).lean();
+    //       if (dbUser) {
+    //         token.name = dbUser.name || `${dbUser.firstName || ""} ${dbUser.lastName || ""}`.trim();
+    //         token.avatar = dbUser.avatar || "";
+    //       }
+    //     } catch (e) {
+    //       console.error("jwt update error:", e);
+    //     }
+    //   }
 
-      return token;
-    },
+    //   return token;
+    // },
+async jwt({ token, user, trigger }) {
+  // On initial sign-in, `user` exists (from provider or credentials)
+  // Upsert the user in DB and set token.sub to DB _id so it's consistent.
+  if (user) {
+    try {
+      await connectDB();
+      const email = (user.email || "").toLowerCase();
+      // upsert ensures OAuth users get a DB record and same _id across logins
+      const dbUser = await User.findOneAndUpdate(
+        { email },
+        {
+          $set: {
+            name: user.name || user?.email?.split('@')[0],
+            email,
+            image: user.image || user.avatar || ""
+          },
+          // store provider if available
+          $setOnInsert: { provider: user.provider || "credentials" }
+        },
+        { upsert: true, new: true }
+      );
+
+      if (dbUser) {
+        token.sub = dbUser._id.toString();
+        token.email = dbUser.email;
+        token.name = dbUser.name || "";
+        token.avatar = dbUser.avatar || dbUser.image || "";
+      } else {
+        // fallback to provider values if DB upsert unexpectedly fails
+        token.sub = user.id || token.sub;
+        token.email = user.email || token.email;
+        token.name = user.name || token.name;
+      }
+    } catch (e) {
+      console.error("jwt db upsert error:", e);
+      // leave token as-is if DB fails
+      token.sub = token.sub || user.id;
+      token.email = token.email || user.email;
+    }
+  }
+
+  // When session is manually updated (e.g., after profile change)
+  if (trigger === "update") {
+    try {
+      await connectDB();
+      const dbUser = await User.findOne({ email: token.email }).lean();
+      if (dbUser) {
+        token.name = dbUser.name || `${dbUser.firstName || ""} ${dbUser.lastName || ""}`.trim();
+        token.avatar = dbUser.avatar || dbUser.image || "";
+      }
+    } catch (e) {
+      console.error("jwt update error:", e);
+    }
+  }
+
+  return token;
+},
 
     /**
      * Session callback - Build session from token
      * Keep this MINIMAL - don't fetch from DB here!
      */
+    // async session({ session, token }) {
+    //   if (session.user) {
+    //     session.user.id = token.sub;
+    //     session.user.email = token.email;
+    //     session.user.name = token.name;
+    //     session.user.avatar = token.avatar || "";
+    //   }
+    //   return session;
+    // },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.sub;
-        session.user.email = token.email;
-        session.user.name = token.name;
-        session.user.avatar = token.avatar || "";
-      }
-      return session;
-    },
+  if (session.user) {
+    session.user.id = token.sub || session.user.id || null;
+    session.user.email = token.email || session.user.email;
+    session.user.name = token.name || session.user.name;
+    session.user.avatar = token.avatar || session.user.avatar || "";
+  }
+  return session;
+},
+
   },
 
   pages: { signIn: "/login" },

@@ -763,10 +763,16 @@ export default function TeamModal({ open, onClose, workspaceId }) {
   if (!open) return null;
 
   // ✅ FIX: Better owner detection
-  const currentUserMember = members.find(
-    (m) => String(m.id) === String(currentUserId)
-  );
-  const isOwner = currentUserMember?.isOwner || false;
+  // const currentUserMember = members.find(
+  //   (m) => String(m.id) === String(currentUserId)
+  // );
+  // const isOwner = currentUserMember?.isOwner || false;
+  const currentUserMember =
+  members.find((m) => String(m.id) === String(currentUserId)) ||
+  members.find((m) => m.email && m.email.toLowerCase() === (window?.__SESSION_EMAIL__ || "").toLowerCase());
+
+const isOwner = currentUserMember?.isOwner || false;
+
 
   console.log("[TeamModal] Owner check:", {
     currentUserId,

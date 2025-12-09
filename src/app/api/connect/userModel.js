@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema(
     firstName: { type: String },
     lastName: { type: String },
     bio: { type: String, maxlength: 500 },
-    role: { type: String, default: "Team Member" },
+    // role: { type: String, default: "Team Member" },
     avatar: { type: String }, // URL to avatar image
     
     // Account settings

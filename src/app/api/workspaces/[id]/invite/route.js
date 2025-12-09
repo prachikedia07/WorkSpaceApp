@@ -189,7 +189,7 @@
 //     );
 //   }
 // }          
-
+//src/app/api/workspaces/%5Bid%5D/invite/route.js
 import { NextResponse } from "next/server";
 import { connectDB } from "../../../connect/db";
 import Invitation from "../../../connect/invitationModel";

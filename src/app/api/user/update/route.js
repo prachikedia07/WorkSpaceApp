@@ -48,7 +48,7 @@
 //src/app/api/user/update/route.js
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../auth/[...nextauth]/route";
+import { authOptions } from "../../auth/[...nextauth]/authOptions";
 import { connectDB } from "../../connect/db";
 import { User } from "../../connect/userModel";
 
@@ -60,8 +60,33 @@ export async function POST(req) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const userId = session.user.id;
+    // const userId = session.user.id;
+    // const body = await req.json();
     const body = await req.json();
+const userId = session?.user?.id;
+const userEmail = session?.user?.email?.toLowerCase();
+
+// If we have a DB id, use it. Otherwise fall back to email (safer for OAuth users)
+let updatedUser;
+if (userId) {
+  try {
+    updatedUser = await User.findByIdAndUpdate(userId, updates, {
+      new: true,
+      runValidators: true,
+    });
+  } catch (e) {
+    // If the id lookup fails (invalid id), fallback to email
+    console.warn("findById failed, falling back to email:", e);
+  }
+}
+
+if (!updatedUser && userEmail) {
+  updatedUser = await User.findOneAndUpdate({ email: userEmail }, updates, {
+    new: true,
+    runValidators: true,
+  });
+}
+
 
     // Validate allowed fields
     const allowedFields = [
@@ -79,11 +104,11 @@ export async function POST(req) {
       if (key in body) updates[key] = body[key];
     }
 
-    // Update DB
-    const updatedUser = await User.findByIdAndUpdate(userId, updates, {
-      new: true,
-      runValidators: true,
-    });
+    // // Update DB
+    // const updatedUser = await User.findByIdAndUpdate(userId, updates, {
+    //   new: true,
+    //   runValidators: true,
+    // });
 
     if (!updatedUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
