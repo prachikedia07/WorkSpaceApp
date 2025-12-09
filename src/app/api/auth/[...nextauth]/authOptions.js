@@ -185,54 +185,57 @@ export const authOptions = {
     //   return token;
     // },
 async jwt({ token, user, trigger }) {
-  // On initial sign-in, `user` exists (from provider or credentials)
-  // Upsert the user in DB and set token.sub to DB _id so it's consistent.
+  // When NextAuth provides a `user` object, this is an immediate sign-in event.
+  // Ensure token.sub is set to the MongoDB _id for ALL providers (credentials + oauth).
   if (user) {
-    try {
-      await connectDB();
-      const email = (user.email || "").toLowerCase();
-      // upsert ensures OAuth users get a DB record and same _id across logins
-      const dbUser = await User.findOneAndUpdate(
-        { email },
-        {
-          $set: {
-            name: user.name || user?.email?.split('@')[0],
-            email,
-            image: user.image || user.avatar || ""
-          },
-          // store provider if available
-          $setOnInsert: { provider: user.provider || "credentials" }
-        },
-        { upsert: true, new: true }
-      );
-
-      if (dbUser) {
-        token.sub = dbUser._id.toString();
-        token.email = dbUser.email;
-        token.name = dbUser.name || "";
-        token.avatar = dbUser.avatar || dbUser.image || "";
-      } else {
-        // fallback to provider values if DB upsert unexpectedly fails
-        token.sub = user.id || token.sub;
-        token.email = user.email || token.email;
-        token.name = user.name || token.name;
-      }
-    } catch (e) {
-      console.error("jwt db upsert error:", e);
-      // leave token as-is if DB fails
-      token.sub = token.sub || user.id;
+    // If user already has an id property (credentials flow), use it.
+    if (user.id) {
+      token.sub = String(user.id);
       token.email = token.email || user.email;
+    } else if (user.email) {
+      // OAuth flow: user doesn't include our Mongo _id. Upsert user in DB by email
+      try {
+        await connectDB();
+        // Try find existing user by email
+        let dbUser = await User.findOne({ email: user.email }).lean();
+
+        if (!dbUser) {
+          // Create a minimal user document for new OAuth user
+          const created = await User.create({
+            name: user.name || user?.email?.split("@")[0],
+            email: user.email,
+            provider: "oauth",
+            avatar: user.image || "",
+            // password intentionally empty / "oauth"
+            password: "oauth",
+          });
+          dbUser = created.toObject ? created.toObject() : created;
+        }
+
+        token.sub = String(dbUser._id);
+        token.email = dbUser.email;
+        token.name = dbUser.name || token.name;
+        token.avatar = dbUser.avatar || token.avatar || user.image || "";
+      } catch (e) {
+        console.error("jwt oauth upsert error:", e);
+        // fallback: keep whatever token.sub exists (maybe provider id)
+        token.sub = token.sub || user.id || user.sub || token.sub;
+      }
+    } else {
+      // fallback: whatever NextAuth provided
+      token.sub = token.sub || user.id || user.sub;
     }
   }
 
-  // When session is manually updated (e.g., after profile change)
+  // Handle updates (e.g. when session is updated elsewhere)
   if (trigger === "update") {
     try {
       await connectDB();
       const dbUser = await User.findOne({ email: token.email }).lean();
       if (dbUser) {
         token.name = dbUser.name || `${dbUser.firstName || ""} ${dbUser.lastName || ""}`.trim();
-        token.avatar = dbUser.avatar || dbUser.image || "";
+        token.avatar = dbUser.avatar || "";
+        token.sub = String(dbUser._id);
       }
     } catch (e) {
       console.error("jwt update error:", e);
@@ -241,6 +244,7 @@ async jwt({ token, user, trigger }) {
 
   return token;
 },
+
 
     /**
      * Session callback - Build session from token
